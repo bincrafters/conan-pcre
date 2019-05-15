@@ -29,12 +29,9 @@ class PCREConan(ConanFile):
         "with_utf": [True, False],
         "with_unicode_properties": [True, False]
     }
-    default_options = ("shared=False", "fPIC=True", "with_bzip2=True",
-                       "with_zlib=True", "with_jit=False", "build_pcrecpp=False",
-                       "build_pcregrep=False", "with_utf=False",
-                       "with_unicode_properties=False")
-    source_subfolder = "source_subfolder"
-    build_subfolder = "build_subfolder"
+    default_options = {'shared': False, 'fPIC': True, 'with_bzip2': True, 'with_zlib': True, 'with_jit': False, 'build_pcrecpp': False, 'build_pcregrep': False, 'with_utf': False, 'with_unicode_properties': False}
+    _source_subfolder = "source_subfolder"
+    _build_subfolder = "build_subfolder"
 
     def config_options(self):
         if self.settings.os == "Windows":
@@ -49,7 +46,7 @@ class PCREConan(ConanFile):
     def patch_cmake(self):
         """Patch CMake file to avoid man and share during install stage
         """
-        cmake_file = os.path.join(self.source_subfolder, "CMakeLists.txt")
+        cmake_file = os.path.join(self._source_subfolder, "CMakeLists.txt")
         tools.replace_in_file(cmake_file, "INSTALL(FILES ${man1} DESTINATION man/man1)", "")
         tools.replace_in_file(cmake_file, "INSTALL(FILES ${man3} DESTINATION man/man3)", "")
         tools.replace_in_file(cmake_file, "INSTALL(FILES ${html} DESTINATION share/doc/pcre/html)", "")
@@ -58,7 +55,7 @@ class PCREConan(ConanFile):
         source_url = "https://ftp.pcre.org"
         tools.get("{0}/pub/pcre/pcre-{1}.tar.gz".format(source_url, self.version))
         extracted_dir = self.name + "-" + self.version
-        os.rename(extracted_dir, self.source_subfolder)
+        os.rename(extracted_dir, self._source_subfolder)
         self.patch_cmake()
 
     def requirements(self):
@@ -67,7 +64,7 @@ class PCREConan(ConanFile):
         if self.options.with_zlib:
             self.requires.add("zlib/1.2.11@conan/stable")
 
-    def configure_cmake(self):
+    def _configure_cmake(self):
         cmake = CMake(self)
         cmake.definitions["PCRE_BUILD_TESTS"] = False
         cmake.definitions["PCRE_BUILD_PCREGREP"] = self.options.build_pcregrep
@@ -81,16 +78,16 @@ class PCREConan(ConanFile):
         cmake.definitions["PCRE_SUPPORT_LIBEDIT"] = False
         if self.settings.os == "Windows" and self.settings.compiler == "Visual Studio":
             cmake.definitions["PCRE_STATIC_RUNTIME"] = not self.options.shared and "MT" in self.settings.compiler.runtime
-        cmake.configure(build_folder=self.build_subfolder)
+        cmake.configure(build_folder=self._build_subfolder)
         return cmake
 
     def build(self):
-        cmake = self.configure_cmake()
+        cmake = self._configure_cmake()
         cmake.build()
 
     def package(self):
-        self.copy(pattern="LICENCE", dst="licenses", src=self.source_subfolder)
-        cmake = self.configure_cmake()
+        self.copy(pattern="LICENCE", dst="licenses", src=self._source_subfolder)
+        cmake = self._configure_cmake()
         cmake.install()
 
     def package_info(self):
